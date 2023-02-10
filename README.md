@@ -37,11 +37,11 @@ volumes:
   emptyDir: {}
 ```
 
-In your Kafka container, set `KAFKA_OPTS` to refer to files placed by the `prometheus-jmx-exporter` container into the shared volume:
+In your java container, set `JAVA_OPTS` to refer to files placed by the `prometheus-jmx-exporter` container into the shared volume:
 
 ```yaml
-- name: KAFKA_OPTS
-  value: -javaagent:/shared-volume/jmx_prometheus_javaagent.jar=19000:/shared-volume/configs/kafka-config.yaml
+- name: JAVA_OPTS
+  value: -javaagent:/shared-volume/jmx_prometheus_javaagent.jar=19000:/shared-volume/configs/config.yaml
 ```
 
 Don't forget to annotate your resources so Prometheus will scrape your pod's `/metrics` endpoint:
