@@ -1,53 +1,49 @@
-# Prometheus JMX Exporter container for Kubernetes
+# Monitoring JAVA app with jmx_exporter 
 
-This is a Docker container intended to be run in the same pod as your Java containers, to export their metrics for Prometheus.
+## Requirement
+* `prometheus` server to collect metrics
+* `jmx_exporter` run as a Java Agent exposing a HTTP server and serving metrics of the local JVM
+* `grafana` dashboard for visualization runnung on port `3000`
+* `Java` application example
 
-The default `CMD` copies over the required [JMX Exporter](https://github.com/prometheus/jmx_exporter) files to the directory specified by the `SHARED_VOLUME_PATH` environment variable.
+## Dockerfile
+```hcl
+FROM java:8-jdk-alpine
+COPY config.yaml nasapicture-0.0.1-SNAPSHOT.war jmx_prometheus_javaagent-0.13.0.jar /usr/app/
+EXPOSE 8080 8082
+WORKDIR /usr/app
+ENTRYPOINT ["java", "-javaagent:./jmx_prometheus_javaagent-0.13.0.jar=8082:config.yaml", "-jar", "nasapicture-0.0.1-SNAPSHOT.war"]
 
-## Files available
+```
+`Metrics will now be accessible at http://localhost:8082/metrics`
 
-* `$SHARED_VOLUME_PATH/jmx_prometheus_javaagent.jar`: the [JMX Exporter](https://github.com/prometheus/jmx_exporter) javaagent JAR file.
-* `$SHARED_VOLUME_PATH/config/*.yaml`: example config files for the exporter.
-    * I only bothered to copy over the [example Kafka config from upstream](https://github.com/prometheus/jmx_exporter/blob/master/example_configs/kafka-0-8-2.yml) because that's what I was using.
 
-## Using this as a Kubernetes Init Container
+## Running
 
-This container is best used as an [Init Container](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/).
+`docker build -t jmx-java:v1 .`
 
-Add this to `initContainers` of your `Deployment` or `StatefulSet`:
+`docker run -dit -p 8082:8082 jmx-java:v1`
 
-```yaml
-spec:
-  initContainers:
-  - name: prometheus-jmx-exporter
-    image: spdigital/prometheus-jmx-exporter-kubernetes:0.3.1
-    env:
-    - name: SHARED_VOLUME_PATH
-      value: /shared-volume
-    volumeMounts:
-    - mountPath: /shared-volume
-      name: shared-volume
+## Prometheus configuration
+
+```hcl
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: 'prometheus_jmx'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'jmx'
+    static_configs:
+      - targets:
+        - 127.0.0.1:8082
 ```
 
-The init container and your Kafka container will share a volume:
 
-```yaml
-volumes:
-- name: shared-volume
-  emptyDir: {}
-```
 
-In your java container, set `JAVA_OPTS` to refer to files placed by the `prometheus-jmx-exporter` container into the shared volume:
+### JMX Grafana dashboard
+Using `jmx_exporter.json` for this dashboard
 
-```yaml
-- name: JAVA_OPTS
-  value: -javaagent:/shared-volume/jmx_prometheus_javaagent.jar=19000:/shared-volume/configs/config.yaml
-```
-
-Don't forget to annotate your resources so Prometheus will scrape your pod's `/metrics` endpoint:
-
-```yaml
-annotations:
-  "prometheus.io/scrape": "true"
-  "prometheus.io/port": "19000"
-```
+![](./pic/grafana.PNG)

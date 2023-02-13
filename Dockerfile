@@ -1,10 +1,7 @@
-FROM alpine:3.13.5
+FROM alpine
 
-COPY files/jmx_prometheus_javaagent-0.15.0.jar /files/jmx_prometheus_javaagent.jar
-COPY files/configs/* /files/configs/
+COPY config.yaml jmx_prometheus_javaagent-0.13.0.jar /copyfile/agent/
 
-ENV SHARED_VOLUME_PATH /shared
-RUN ["sh", "-c", "mkdir -p $SHARED_VOLUME_PATH"]
 
-CMD ["sh", "-c", "cp -a /files/* $SHARED_VOLUME_PATH"]
+
 
