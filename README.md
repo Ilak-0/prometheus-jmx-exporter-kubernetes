@@ -1,4 +1,4 @@
-# Monitoring JAVA app with jmx_exporter in k8s
+# Monitoring JAVA app with jmx_exporter in k8s(using initContainer) 
 
 ## Requirement
 * `prometheus` server to collect metrics
