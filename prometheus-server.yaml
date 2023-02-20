@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      bb: web
+  template:
+    metadata:
+      labels:
+        bb: web
+    spec:
+      containers:
+        - name: prometheus-site
+          image: ubuntu/prometheus
+          imagePullPolicy: Never
+          args:
+            - "--web.enable-admin-api"                       #控制对admin HTTP API的访问，其中包括删除时间序列等功能
+            - "--web.enable-lifecycle"                       #支持热更新，直接执行localhost:9090/-/reload立即生效
+            - "--config.file=/etc/prometheus/prometheus.yml" #通过volume挂载prometheus.yml
+          volumeMounts:
+            - mountPath: "/etc/prometheus"
+              name: config-volume
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-config     #定义的prometeus.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-entrypoint
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    bb: web
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30090

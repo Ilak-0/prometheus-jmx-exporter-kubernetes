@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tomcat-demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      bb: web
+  template:
+    metadata:
+      labels:
+        bb: web
+    spec:
+      containers:
+        - name: tomcat-site
+          image: tomcat
+          imagePullPolicy: Never
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: -javaagent:/jmx/agent/jmx_prometheus_javaagent-0.13.0.jar=1234:/jmx/agent/config/prometheus-jmx-config.yaml
+          volumeMounts:
+            - mountPath: /jmx/agent
+              name: shared-volume
+            - mountPath: /jmx/agent/config
+              name: prometheus-jmx-config
+      volumes:
+        - name: shared-volume
+          emptyDir: {}
+        - configMap:
+            name: prometheus-jmx-config
+          name: prometheus-jmx-config
+      initContainers:
+        - args:
+            - -c
+            - mkdir -p /jmx/agent && cp -r /copyfile/agent/* /jmx/agent
+          command:
+            - sh
+          image: prometheus-jmx-exporter-kubernetes
+          name: prometheus-jmx-exporter
+          imagePullPolicy: Never
+          volumeMounts:
+            - mountPath: /jmx/agent
+              name: shared-volume
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tomcat-entrypoint
+  namespace: default
+  annotations:
+    "prometheus.io/scrape": "true"
+    "prometheus.io/port": "1234"
+spec:
+  type: NodePort
+  selector:
+    bb: web
+  ports:
+    - name: tomcat
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
+    - name: jmx-exporter
+      port: 1234
+      targetPort: 1234
+      nodePort: 31234
