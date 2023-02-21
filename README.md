@@ -15,7 +15,7 @@ FROM alpine
 #COPY config.yaml jmx_prometheus_javaagent-0.13.0.jar /copyfile/agent/
 COPY jmx_prometheus_javaagent-0.13.0.jar /copyfile/agent/
 ```
-docker built -f tagNameXXX -t .
+docker built -f Dockerfile -t tagNameXXX  .
 
 ## Get images
 get tomcat, prometheus,grafana images from public docker hug
