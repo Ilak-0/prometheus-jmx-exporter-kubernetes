@@ -94,7 +94,8 @@ data:
       - targets: ['localhost:9090']
     - job_name: 'jmx-exporter'
       static_configs:
-      - targets: ['10.1.0.188:1234']
+      ## your java app/ tomcat endpoints address
+      - targets: ['xx.x.x.xxxx:1234']
 
 ```
 ## Create k8s yaml
